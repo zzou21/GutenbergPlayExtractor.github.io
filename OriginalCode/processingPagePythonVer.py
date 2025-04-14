@@ -115,6 +115,6 @@ if __name__ == "__main__":
         "https://www.gutenberg.org/cache/epub/75666/pg75666.txt"
     ]
     # Currently only works when speaker names are in all caps. Working on other formats of 
-    jsonStorageFolderPath = "/Users/Jerry/Desktop/CMAC530FinProj/jsonStorage"
+    jsonStorageFolderPath = "./OriginalCode/jsonStorage"
     gutenbergExtractor = GutenbergTXTPlayExtractor(htmlWebLinkList, jsonStorageFolderPath)
     gutenbergExtractor.run()

@@ -148,6 +148,6 @@ const htmlWebLinkList = [
   "https://www.gutenberg.org/cache/epub/75666/pg75666.txt"
 ];
 
-const outputFolder = "./jsonStorageJS";
+const outputFolder = "./OriginalCode/jsonStorageJS";
 const extractor = new GutenbergTXTPlayExtractor(htmlWebLinkList, outputFolder);
 extractor.run();
