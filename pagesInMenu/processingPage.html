@@ -51,7 +51,7 @@ permalink: /processing-tool
       status.textContent = "Fetching text...";
       
       const urlList = urlText.split(/\r?\n/).map(url => url.trim()).filter(Boolean);
-      const apiRelayURL = "https://YOUR_API.execute-api.YOUR_REGION.amazonaws.com/relay"; // <-- Replace with your real URL
+      const apiRelayURL = "https://8phd78erkg.execute-api.us-east-2.amazonaws.com/default/corsRelayFetcherGutenberg";
 
       for (const url of urlList) {
         try {
