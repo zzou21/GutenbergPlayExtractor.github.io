@@ -67,7 +67,7 @@ class GutenbergTXTPlayExtractor:
                 if dialogue:
                     dialogueDictionary[currentSpeakingCharacter].append(dialogue)
             elif currentSpeakingCharacter:
-                dialogueDictionary[currentSpeakingCharacter].append(dialogue)
+                dialogueDictionary[currentSpeakingCharacter].append(line.strip())
 
         return dict(dialogueDictionary)            
 
