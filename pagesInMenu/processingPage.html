@@ -29,9 +29,12 @@ permalink: /processing-tool
       status.textContent = "Fetching text...";
 
       try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("Failed to fetch text");
+        const apiRelayURL = "https://8phd78erkg.execute-api.us-east-2.amazonaws.com/default/corsRelayFetcherGutenberg";
+        const response = await fetch(`${apiRelayURL}?url=${encodeURIComponent(url)}`);
+        if (!response.ok) throw new Error("Failed to fetch text via relay");
         const text = await response.text();
+
+        status.textContent = "Processing dialogue...";
 
         const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
         const cleanedLines = cleanExtractedPlainText(lines);
