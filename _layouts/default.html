@@ -14,21 +14,22 @@
     <link rel="stylesheet" href="{{ '/defaultStyle.css' | relative_url }}">
   </head>
   <body>
-    <div id="container">
-      <div class="inner">
+    <a id="skip-to-content" href="#content">Skip to the content.</a>
 
-        <header claass="page-header" role="banner">
-          <h1 style="font-size: 24px; margin-top: 5px;">{{ page.title | default: site.title | default: site.github.repository_name }}</h1>
-        </header>
-        <nav class="menu-bar">
-          <a href="{{ '/' | relative_url }}">Home</a>
-          <a href="{{ '/processing-tool' | relative_url }}" target="_blank" rel="noopener noreferrer">Tool</a>
-        </nav>
-        
-        <section id="main_content">
-          {{ content }}
-        </section>
-      </div>
-    </div>
+    <header class="page-header" role="banner">
+      <h1 class="project-name">{{ page.title | default: site.title | default: site.github.repository_name }}</h1>
+    </header>
+    <nav class="menu-bar">
+      <a href="{{ '/' | relative_url }}">Home</a>
+      <a href="{{ '/processing-tool' | relative_url}}">Tool</a>
+    </nav>
+    
+
+    <main id="content" class="main-content" role="main">
+      {{ content }}
+
+      <footer class="site-footer">
+      </footer>
+    </main>
   </body>
 </html>
