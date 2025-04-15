@@ -45,7 +45,16 @@ permalink: /processing-tool
         const blob = new Blob([jsonStr], { type: "application/json" });
         const link = document.createElement("a");
 
-        const filename = url.split("/").pop().replace(".txt", "_dialogue.json");
+        let playName = lines[0].replace(/\s/g, "");
+        const gutenbergPrefix = "TheProjectGutenbergeBookof";
+        if (playName.includes(gutenbergPrefix)) {
+          playName = playName.slice(playName.indexOf(gutenbergPrefix) + gutenbergPrefix.length);
+        }
+        if (!playName || playName.length < 3) {
+          playName = url.split("/").pop().replace(".txt", "");
+        }
+        const filename = `${playName}_dialogue.json`;
+
         link.href = URL.createObjectURL(blob);
         link.download = filename || "dialogue.json";
         link.click();
