@@ -39,19 +39,16 @@ permalink: /processing-tool
     textarea.addEventListener("scroll", () => {
       lineNumbers.scrollTop = textarea.scrollTop;
     });
-
     updateLineNumbers();
-
-
-    const zip = new JSZip();
 
     async function extractAndDownload() {
       const urlText = textarea.value.trim();
       const status = document.getElementById("status");
-      status.textContent = "Fetching text...";
-      
+      status.textContent = "Fetching text...\n";
+
       const urlList = urlText.split(/\r?\n/).map(url => url.trim()).filter(Boolean);
       const apiRelayURL = "https://8phd78erkg.execute-api.us-east-2.amazonaws.com/default/corsRelayFetcherGutenberg";
+      const zip = new JSZip();
 
       for (const url of urlList) {
         try {
@@ -75,30 +72,23 @@ permalink: /processing-tool
           }
 
           const jsonStr = JSON.stringify(cleanedDialogue, null, 2);
-          const blob = new Blob([jsonStr], { type: "application/json" });
-          const link = document.createElement("a");
-          link.href = URL.createObjectURL(blob);
-          link.download = `${playName}_dialogue.json`;
-          link.click();
 
-          status.textContent += `Downloaded: ${playName}_dialogue.json\n`;
+          zip.file(`${playName}_dialogue.json`, jsonStr);
+
+          status.textContent += `Processed: ${playName}_dialogue.json\n`;
         } catch (err) {
           status.textContent += `Error with ${url}: ${err.message}\n`;
         }
       }
-
-      status.textContent += "\nAll done.";
-
-      zip.file(`${playName}_dialogue.json`, jsonStr);
-      status.textContent += "\nZipping files...";
+      status.textContent += "\nZipping files...\n";
       const content = await zip.generateAsync({ type: "blob" });
       const zipLink = document.createElement("a");
       zipLink.href = URL.createObjectURL(content);
       zipLink.download = "gutenberg_dialogues.zip";
       zipLink.click();
-      status.textContent += "\nDownloaded ZIP file.";
-
+      status.textContent += "\nDownloaded ZIP file.\n";
     }
+
 
 
     function cleanExtractedPlainText(lines) {
