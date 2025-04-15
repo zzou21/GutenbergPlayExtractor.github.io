@@ -16,13 +16,33 @@ permalink: /processing-tool
 <body>
   <h1>Project Gutenberg Dialogue Extractor</h1>
 
-  <label for="urlInput">Paste Project Gutenberg .txt Link:</label>
-  <input type="text" id="urlInput" placeholder="https://www.gutenberg.org/cache/epub/1523/pg1523.txt"/>
+  <label for="urlInput">Paste one or more Project Gutenberg .txt links (one per line):</label>
+  <div class="flex-container">
+    <pre id="lineNumbers">1</pre>
+    <textarea id="urlInput" rows="6" placeholder="https://www.gutenberg.org/cache/epub/1523/pg1523.txt&#10;https://www.gutenberg.org/cache/epub/75666/pg75666.txt"></textarea>
+  </div>
+
   <button onclick="extractAndDownload()">Generate JSON</button>
 
   <pre id="status"></pre>
 
   <script>
+
+    const textarea = document.getElementById("urlInput");
+    const lineNumbers = document.getElementById("lineNumbers");
+
+    function updateLineNumbers() {
+      const lines = textarea.value.split("\n").length;
+      lineNumbers.textContent = Array.from({ length: lines }, (_, i) => i + 1).join("\n");
+    }
+
+    textarea.addEventListener("input", updateLineNumbers);
+    textarea.addEventListener("scroll", () => {
+      lineNumbers.scrollTop = textarea.scrollTop;
+    });
+
+    updateLineNumbers();
+
     async function extractAndDownload() {
       const url = document.getElementById("urlInput").value.trim();
       const status = document.getElementById("status");
