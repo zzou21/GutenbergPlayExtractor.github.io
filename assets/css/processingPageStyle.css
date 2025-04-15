@@ -1,6 +1,6 @@
 body {
     font-family: Arial, sans-serif;
-    padding: 2em;
+    padding: 0;
   }
   label, textarea, input, button {
     display: block;
@@ -19,11 +19,17 @@ body {
     color: gray;
     padding-right: 10px;
   }
+
+  .content {
+    padding: 2em;
+    max-width: 1000px;
+    margin: 0 auto;
+  }  
   
 
   textarea {
     width: 100%;
-    max-width: 800px; /* wider than default */
+    max-width: 800px;
     font-family: monospace;
     white-space: pre;
     line-height: 1.6em;

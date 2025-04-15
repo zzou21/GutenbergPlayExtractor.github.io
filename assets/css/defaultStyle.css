@@ -37,12 +37,3 @@
 .btn-container {
   text-align: center;
 }
-
-/*For searchTool.html: */
-.instructions {
-  font-size: 14px;
-  color: black;
-  line-height: 1.6;
-  text-align: justify;
-  border-radius: 5px;
-}

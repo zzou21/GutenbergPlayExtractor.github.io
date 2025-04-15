@@ -13,165 +13,167 @@ permalink: /processing-tool
 
 </head>
 <body>
-  <h1>Project Gutenberg Dialogue Extractor</h1>
+  <main class="content">
+    <h1>Project Gutenberg Dialogue Extractor</h1>
 
-  <label for="urlInput">Paste one or more Project Gutenberg .txt links (one per line):</label>
-  <div class="flex-container">
-    <pre id="lineNumbers">1</pre>
-    <textarea id="urlInput" rows="6" placeholder="https://www.gutenberg.org/cache/epub/1523/pg1523.txt&#10;https://www.gutenberg.org/cache/epub/75666/pg75666.txt"></textarea>
-  </div>
+    <label for="urlInput">Paste one or more Project Gutenberg .txt links (one per line):</label>
+    <div class="flex-container">
+      <pre id="lineNumbers">1</pre>
+      <textarea id="urlInput" rows="6" placeholder="https://www.gutenberg.org/cache/epub/1523/pg1523.txt&#10;https://www.gutenberg.org/cache/epub/75666/pg75666.txt"></textarea>
+    </div>
 
-  <button onclick="extractAndDownload()">Generate JSON</button>
+    <button onclick="extractAndDownload()">Generate JSON</button>
 
-  <pre id="status"></pre>
+    <pre id="status"></pre>
 
-  <script>
+    <script>
 
-    const textarea = document.getElementById("urlInput");
-    const lineNumbers = document.getElementById("lineNumbers");
+      const textarea = document.getElementById("urlInput");
+      const lineNumbers = document.getElementById("lineNumbers");
 
-    function updateLineNumbers() {
-      const lines = textarea.value.split("\n").length;
-      lineNumbers.textContent = Array.from({ length: lines }, (_, i) => i + 1).join("\n");
-    }
+      function updateLineNumbers() {
+        const lines = textarea.value.split("\n").length;
+        lineNumbers.textContent = Array.from({ length: lines }, (_, i) => i + 1).join("\n");
+      }
 
-    textarea.addEventListener("input", updateLineNumbers);
-    textarea.addEventListener("scroll", () => {
-      lineNumbers.scrollTop = textarea.scrollTop;
-    });
-    updateLineNumbers();
+      textarea.addEventListener("input", updateLineNumbers);
+      textarea.addEventListener("scroll", () => {
+        lineNumbers.scrollTop = textarea.scrollTop;
+      });
+      updateLineNumbers();
 
-    async function extractAndDownload() {
-      const urlText = textarea.value.trim();
-      const status = document.getElementById("status");
-      status.textContent = "Fetching text...\n";
+      async function extractAndDownload() {
+        const urlText = textarea.value.trim();
+        const status = document.getElementById("status");
+        status.textContent = "Fetching text...\n";
 
-      const urlList = urlText.split(/\r?\n/).map(url => url.trim()).filter(Boolean);
-      const apiRelayURL = "https://8phd78erkg.execute-api.us-east-2.amazonaws.com/default/corsRelayFetcherGutenberg";
-      const zip = new JSZip();
+        const urlList = urlText.split(/\r?\n/).map(url => url.trim()).filter(Boolean);
+        const apiRelayURL = "https://8phd78erkg.execute-api.us-east-2.amazonaws.com/default/corsRelayFetcherGutenberg";
+        const zip = new JSZip();
 
-      for (const url of urlList) {
-        try {
-          status.textContent += `Fetching: ${url}\n`;
-          const response = await fetch(`${apiRelayURL}?url=${encodeURIComponent(url)}`);
-          if (!response.ok) throw new Error("Failed to fetch text via relay");
+        for (const url of urlList) {
+          try {
+            status.textContent += `Fetching: ${url}\n`;
+            const response = await fetch(`${apiRelayURL}?url=${encodeURIComponent(url)}`);
+            if (!response.ok) throw new Error("Failed to fetch text via relay");
 
-          const text = await response.text();
-          const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-          const cleanedLines = cleanExtractedPlainText(lines);
-          const dialogueDict = determineFormatOfExtraction(cleanedLines);
-          const cleanedDialogue = cleanSpeakers(dialogueDict);
+            const text = await response.text();
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            const cleanedLines = cleanExtractedPlainText(lines);
+            const dialogueDict = determineFormatOfExtraction(cleanedLines);
+            const cleanedDialogue = cleanSpeakers(dialogueDict);
 
-          let playName = lines[0].replace(/\s/g, "");
-          const gutenbergPrefix = "TheProjectGutenbergeBookof";
-          if (playName.includes(gutenbergPrefix)) {
-            playName = playName.slice(playName.indexOf(gutenbergPrefix) + gutenbergPrefix.length);
+            let playName = lines[0].replace(/\s/g, "");
+            const gutenbergPrefix = "TheProjectGutenbergeBookof";
+            if (playName.includes(gutenbergPrefix)) {
+              playName = playName.slice(playName.indexOf(gutenbergPrefix) + gutenbergPrefix.length);
+            }
+            if (!playName || playName.length < 3) {
+              playName = url.split("/").pop().replace(".txt", "");
+            }
+
+            const jsonStr = JSON.stringify(cleanedDialogue, null, 2);
+
+            zip.file(`${playName}_dialogue.json`, jsonStr);
+
+            status.textContent += `Processed: ${playName}_dialogue.json\n`;
+          } catch (err) {
+            status.textContent += `Error with ${url}: ${err.message}\n`;
           }
-          if (!playName || playName.length < 3) {
-            playName = url.split("/").pop().replace(".txt", "");
+        }
+        status.textContent += "\nZipping files...\n";
+        const content = await zip.generateAsync({ type: "blob" });
+        const zipLink = document.createElement("a");
+        zipLink.href = URL.createObjectURL(content);
+        zipLink.download = "gutenberg_dialogues.zip";
+        zipLink.click();
+        status.textContent += "\nDownloaded ZIP file.\n";
+      }
+
+
+
+      function cleanExtractedPlainText(lines) {
+        const startMarkersPrimary = ["DRAMATIS PERSONAE", "DRAMATIS PERSONÆ", "Dramatis Personæ", "Dramatis Personae", "*** START OF THE PROJECT GUTENBERG"];
+        const startMarkersSecondary = ["ACT I.", "ACT 1.", "ACT 1", "ACT I", "FIRST ACT", "First Act", "PROLOGUE", "Prologue"];
+        const startMarkersThird = ["SCENE", "Scene"];
+        const endMarkers = ["*** END OF THE PROJECT GUTENBERG EBOOK", "NOTES:"];
+
+        let begin = 0, end = lines.length;
+
+        for (let i = 0; i < lines.length; i++) {
+          if (startMarkersPrimary.some(m => lines[i].includes(m))) { begin = i; break; }
+        }
+        for (let i = begin; i < lines.length; i++) {
+          if (startMarkersSecondary.some(m => lines[i].includes(m))) { begin = i; break; }
+        }
+        for (let i = begin; i < lines.length; i++) {
+          if (startMarkersThird.some(m => lines[i].includes(m))) { begin = i; break; }
+        }
+        for (let i = begin; i < lines.length; i++) {
+          if (endMarkers.some(m => lines[i].includes(m))) { end = i; break; }
+        }
+        return lines.slice(begin, end);
+      }
+
+      function determineFormatOfExtraction(lines) {
+        const inlinePattern = /^([A-Z][A-Z\-\.]+)\b(?:\s|:)(.*)/;
+        const blockPattern = /^([A-Z][A-Z\s\-\.]+?)(?:[\.:])?$/;
+
+        const inlineCount = lines.filter(line => line.match(inlinePattern)).length;
+        const blockCount = lines.filter(line => line.match(blockPattern)).length;
+
+        return inlineCount >= blockCount
+          ? txtParseSingleTXTInline(lines)
+          : txtParseSingleTXTBlock(lines);
+      }
+
+      function txtParseSingleTXTInline(lines) {
+        const pattern = /^([A-Z][A-Z\-\.]+)\b(?:\s|:)(.*)/;
+        let currentSpeaker = null;
+        const dialogueDict = {};
+
+        for (let line of lines) {
+          const match = line.match(pattern);
+          if (match) {
+            currentSpeaker = match[1].trim();
+            const dialogue = match[2].trim();
+            if (!dialogueDict[currentSpeaker]) dialogueDict[currentSpeaker] = [];
+            if (dialogue) dialogueDict[currentSpeaker].push(dialogue);
+          } else if (currentSpeaker) {
+            dialogueDict[currentSpeaker].push(line.trim());
           }
-
-          const jsonStr = JSON.stringify(cleanedDialogue, null, 2);
-
-          zip.file(`${playName}_dialogue.json`, jsonStr);
-
-          status.textContent += `Processed: ${playName}_dialogue.json\n`;
-        } catch (err) {
-          status.textContent += `Error with ${url}: ${err.message}\n`;
         }
+        return dialogueDict;
       }
-      status.textContent += "\nZipping files...\n";
-      const content = await zip.generateAsync({ type: "blob" });
-      const zipLink = document.createElement("a");
-      zipLink.href = URL.createObjectURL(content);
-      zipLink.download = "gutenberg_dialogues.zip";
-      zipLink.click();
-      status.textContent += "\nDownloaded ZIP file.\n";
-    }
 
+      function txtParseSingleTXTBlock(lines) {
+        const pattern = /^([A-Z][A-Z\s\-\.]+?)(?:[\.:])?$/;
+        let currentSpeaker = null;
+        const dialogueDict = {};
 
-
-    function cleanExtractedPlainText(lines) {
-      const startMarkersPrimary = ["DRAMATIS PERSONAE", "DRAMATIS PERSONÆ", "Dramatis Personæ", "Dramatis Personae", "*** START OF THE PROJECT GUTENBERG"];
-      const startMarkersSecondary = ["ACT I.", "ACT 1.", "ACT 1", "ACT I", "FIRST ACT", "First Act", "PROLOGUE", "Prologue"];
-      const startMarkersThird = ["SCENE", "Scene"];
-      const endMarkers = ["*** END OF THE PROJECT GUTENBERG EBOOK", "NOTES:"];
-
-      let begin = 0, end = lines.length;
-
-      for (let i = 0; i < lines.length; i++) {
-        if (startMarkersPrimary.some(m => lines[i].includes(m))) { begin = i; break; }
-      }
-      for (let i = begin; i < lines.length; i++) {
-        if (startMarkersSecondary.some(m => lines[i].includes(m))) { begin = i; break; }
-      }
-      for (let i = begin; i < lines.length; i++) {
-        if (startMarkersThird.some(m => lines[i].includes(m))) { begin = i; break; }
-      }
-      for (let i = begin; i < lines.length; i++) {
-        if (endMarkers.some(m => lines[i].includes(m))) { end = i; break; }
-      }
-      return lines.slice(begin, end);
-    }
-
-    function determineFormatOfExtraction(lines) {
-      const inlinePattern = /^([A-Z][A-Z\-\.]+)\b(?:\s|:)(.*)/;
-      const blockPattern = /^([A-Z][A-Z\s\-\.]+?)(?:[\.:])?$/;
-
-      const inlineCount = lines.filter(line => line.match(inlinePattern)).length;
-      const blockCount = lines.filter(line => line.match(blockPattern)).length;
-
-      return inlineCount >= blockCount
-        ? txtParseSingleTXTInline(lines)
-        : txtParseSingleTXTBlock(lines);
-    }
-
-    function txtParseSingleTXTInline(lines) {
-      const pattern = /^([A-Z][A-Z\-\.]+)\b(?:\s|:)(.*)/;
-      let currentSpeaker = null;
-      const dialogueDict = {};
-
-      for (let line of lines) {
-        const match = line.match(pattern);
-        if (match) {
-          currentSpeaker = match[1].trim();
-          const dialogue = match[2].trim();
-          if (!dialogueDict[currentSpeaker]) dialogueDict[currentSpeaker] = [];
-          if (dialogue) dialogueDict[currentSpeaker].push(dialogue);
-        } else if (currentSpeaker) {
-          dialogueDict[currentSpeaker].push(line.trim());
+        for (let line of lines) {
+          const match = line.match(pattern);
+          if (match) {
+            currentSpeaker = match[1].trim();
+            if (!dialogueDict[currentSpeaker]) dialogueDict[currentSpeaker] = [];
+          } else if (currentSpeaker) {
+            dialogueDict[currentSpeaker].push(line.trim());
+          }
         }
+        return dialogueDict;
       }
-      return dialogueDict;
-    }
 
-    function txtParseSingleTXTBlock(lines) {
-      const pattern = /^([A-Z][A-Z\s\-\.]+?)(?:[\.:])?$/;
-      let currentSpeaker = null;
-      const dialogueDict = {};
-
-      for (let line of lines) {
-        const match = line.match(pattern);
-        if (match) {
-          currentSpeaker = match[1].trim();
-          if (!dialogueDict[currentSpeaker]) dialogueDict[currentSpeaker] = [];
-        } else if (currentSpeaker) {
-          dialogueDict[currentSpeaker].push(line.trim());
-        }
+      function cleanSpeakers(data) {
+        const elementsToDelete = ["ACT I", "Act I", "Act V", "Scene"];
+        const keysToDelete = Object.keys(data).filter(speaker =>
+          elementsToDelete.some(el =>
+            speaker.toLowerCase().startsWith(el.toLowerCase())
+          )
+        );
+        for (const key of keysToDelete) delete data[key];
+        return data;
       }
-      return dialogueDict;
-    }
-
-    function cleanSpeakers(data) {
-      const elementsToDelete = ["ACT I", "Act I", "Act V", "Scene"];
-      const keysToDelete = Object.keys(data).filter(speaker =>
-        elementsToDelete.some(el =>
-          speaker.toLowerCase().startsWith(el.toLowerCase())
-        )
-      );
-      for (const key of keysToDelete) delete data[key];
-      return data;
-    }
-  </script>
+    </script>
+  </main>
 </body>
 </html>
