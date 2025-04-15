@@ -12,6 +12,8 @@ permalink: /processing-tool
     body { font-family: Arial, sans-serif; padding: 2em; }
     label, textarea, input, button { display: block; margin-top: 1em; width: 100%; max-width: 600px; }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
 </head>
 <body>
   <h1>Project Gutenberg Dialogue Extractor</h1>
@@ -43,47 +45,62 @@ permalink: /processing-tool
 
     updateLineNumbers();
 
+
+    const zip = new JSZip();
+
     async function extractAndDownload() {
-      const url = document.getElementById("urlInput").value.trim();
+      const urlText = textarea.value.trim();
       const status = document.getElementById("status");
       status.textContent = "Fetching text...";
+      
+      const urlList = urlText.split(/\r?\n/).map(url => url.trim()).filter(Boolean);
+      const apiRelayURL = "https://YOUR_API.execute-api.YOUR_REGION.amazonaws.com/relay"; // <-- Replace with your real URL
 
-      try {
-        const apiRelayURL = "https://8phd78erkg.execute-api.us-east-2.amazonaws.com/default/corsRelayFetcherGutenberg";
-        const response = await fetch(`${apiRelayURL}?url=${encodeURIComponent(url)}`);
-        if (!response.ok) throw new Error("Failed to fetch text via relay");
-        const text = await response.text();
+      for (const url of urlList) {
+        try {
+          status.textContent += `Fetching: ${url}\n`;
+          const response = await fetch(`${apiRelayURL}?url=${encodeURIComponent(url)}`);
+          if (!response.ok) throw new Error("Failed to fetch text via relay");
 
-        status.textContent = "Processing dialogue...";
+          const text = await response.text();
+          const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+          const cleanedLines = cleanExtractedPlainText(lines);
+          const dialogueDict = determineFormatOfExtraction(cleanedLines);
+          const cleanedDialogue = cleanSpeakers(dialogueDict);
 
-        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-        const cleanedLines = cleanExtractedPlainText(lines);
-        const dialogueDict = determineFormatOfExtraction(cleanedLines);
-        const cleanedDialogue = cleanSpeakers(dialogueDict);
+          let playName = lines[0].replace(/\s/g, "");
+          const gutenbergPrefix = "TheProjectGutenbergeBookof";
+          if (playName.includes(gutenbergPrefix)) {
+            playName = playName.slice(playName.indexOf(gutenbergPrefix) + gutenbergPrefix.length);
+          }
+          if (!playName || playName.length < 3) {
+            playName = url.split("/").pop().replace(".txt", "");
+          }
 
-        const jsonStr = JSON.stringify(cleanedDialogue, null, 2);
-        const blob = new Blob([jsonStr], { type: "application/json" });
-        const link = document.createElement("a");
+          const jsonStr = JSON.stringify(cleanedDialogue, null, 2);
+          const blob = new Blob([jsonStr], { type: "application/json" });
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = `${playName}_dialogue.json`;
+          link.click();
 
-        let playName = lines[0].replace(/\s/g, "");
-        const gutenbergPrefix = "TheProjectGutenbergeBookof";
-        if (playName.includes(gutenbergPrefix)) {
-          playName = playName.slice(playName.indexOf(gutenbergPrefix) + gutenbergPrefix.length);
+          status.textContent += `Downloaded: ${playName}_dialogue.json\n`;
+        } catch (err) {
+          status.textContent += `Error with ${url}: ${err.message}\n`;
         }
-        if (!playName || playName.length < 3) {
-          playName = url.split("/").pop().replace(".txt", "");
-        }
-        const filename = `${playName}_dialogue.json`;
-
-        link.href = URL.createObjectURL(blob);
-        link.download = filename || "dialogue.json";
-        link.click();
-
-        status.textContent = "Done! JSON file should have downloaded.";
-      } catch (err) {
-        status.textContent = "Error: " + err.message;
       }
+
+      status.textContent += "\nAll done.";
     }
+    zip.file(`${playName}_dialogue.json`, jsonStr);
+    status.textContent += "\nZipping files...";
+    const content = await zip.generateAsync({ type: "blob" });
+    const zipLink = document.createElement("a");
+    zipLink.href = URL.createObjectURL(content);
+    zipLink.download = "gutenberg_dialogues.zip";
+    zipLink.click();
+    status.textContent += "\nDownloaded ZIP file.";
+
 
     function cleanExtractedPlainText(lines) {
       const startMarkersPrimary = ["DRAMATIS PERSONAE", "DRAMATIS PERSONÆ", "Dramatis Personæ", "Dramatis Personae", "*** START OF THE PROJECT GUTENBERG"];
