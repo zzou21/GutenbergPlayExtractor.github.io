@@ -3,12 +3,11 @@ layout: default
 title: Processing Tool
 permalink: /processing-tool
 ---
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Gutenberg Dialogue Extractor</title>
+  <title>Project Gutenberg Dialogue Extractor</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 2em; }
     label, textarea, input, button { display: block; margin-top: 1em; width: 100%; max-width: 600px; }
@@ -19,7 +18,6 @@ permalink: /processing-tool
 
   <label for="urlInput">Paste Project Gutenberg .txt Link:</label>
   <input type="text" id="urlInput" placeholder="https://www.gutenberg.org/cache/epub/1523/pg1523.txt" />
-
   <button onclick="extractAndDownload()">Generate JSON</button>
 
   <pre id="status"></pre>
@@ -35,51 +33,106 @@ permalink: /processing-tool
         if (!response.ok) throw new Error("Failed to fetch text");
         const text = await response.text();
 
-        status.textContent = "Processing dialogue...";
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        const cleanedLines = cleanExtractedPlainText(lines);
+        const dialogueDict = determineFormatOfExtraction(cleanedLines);
+        const cleanedDialogue = cleanSpeakers(dialogueDict);
 
-        const lines = text.split("\n").map(line => line.trim()).filter(line => line);
-        const dialogueDictionary = {};
-
-        const elementsToDelete = ["ACT I", "Act I"];
-        const blockPattern = /^[A-Z][A-Z\s\-\.]+[\.:]?$/;
-
-        let currentSpeaker = null;
-        for (let line of lines) {
-          if (blockPattern.test(line)) {
-            currentSpeaker = line.replace(/[\.:]$/, "").trim();
-            if (!dialogueDictionary[currentSpeaker]) {
-              dialogueDictionary[currentSpeaker] = [];
-            }
-          } else if (currentSpeaker) {
-            dialogueDictionary[currentSpeaker].push(line);
-          }
-        }
-
-        // Clean out unwanted "speakers"
-        const keysToDelete = Object.keys(dialogueDictionary).filter(speaker =>
-          elementsToDelete.some(element =>
-            speaker.toLowerCase().startsWith(element.toLowerCase())
-          )
-        );
-        for (const speaker of keysToDelete) {
-          delete dialogueDictionary[speaker];
-        }
-
-        // Create and trigger JSON download
-        const jsonStr = JSON.stringify(dialogueDictionary, null, 2);
+        const jsonStr = JSON.stringify(cleanedDialogue, null, 2);
         const blob = new Blob([jsonStr], { type: "application/json" });
         const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
 
-        // Use file name from URL or fallback
         const filename = url.split("/").pop().replace(".txt", "_dialogue.json");
+        link.href = URL.createObjectURL(blob);
         link.download = filename || "dialogue.json";
         link.click();
 
         status.textContent = "Done! JSON file should have downloaded.";
-      } catch (error) {
-        status.textContent = "Error: " + error.message;
+      } catch (err) {
+        status.textContent = "Error: " + err.message;
       }
+    }
+
+    function cleanExtractedPlainText(lines) {
+      const startMarkersPrimary = ["DRAMATIS PERSONAE", "DRAMATIS PERSONÆ", "Dramatis Personæ", "Dramatis Personae", "*** START OF THE PROJECT GUTENBERG"];
+      const startMarkersSecondary = ["ACT I.", "ACT 1.", "ACT 1", "ACT I", "FIRST ACT", "First Act", "PROLOGUE", "Prologue"];
+      const startMarkersThird = ["SCENE", "Scene"];
+      const endMarkers = ["*** END OF THE PROJECT GUTENBERG EBOOK", "NOTES:"];
+
+      let begin = 0, end = lines.length;
+
+      for (let i = 0; i < lines.length; i++) {
+        if (startMarkersPrimary.some(m => lines[i].includes(m))) { begin = i; break; }
+      }
+      for (let i = begin; i < lines.length; i++) {
+        if (startMarkersSecondary.some(m => lines[i].includes(m))) { begin = i; break; }
+      }
+      for (let i = begin; i < lines.length; i++) {
+        if (startMarkersThird.some(m => lines[i].includes(m))) { begin = i; break; }
+      }
+      for (let i = begin; i < lines.length; i++) {
+        if (endMarkers.some(m => lines[i].includes(m))) { end = i; break; }
+      }
+      return lines.slice(begin, end);
+    }
+
+    function determineFormatOfExtraction(lines) {
+      const inlinePattern = /^([A-Z][A-Z\-\.]+)\b(?:\s|:)(.*)/;
+      const blockPattern = /^([A-Z][A-Z\s\-\.]+?)(?:[\.:])?$/;
+
+      const inlineCount = lines.filter(line => line.match(inlinePattern)).length;
+      const blockCount = lines.filter(line => line.match(blockPattern)).length;
+
+      return inlineCount >= blockCount
+        ? txtParseSingleTXTInline(lines)
+        : txtParseSingleTXTBlock(lines);
+    }
+
+    function txtParseSingleTXTInline(lines) {
+      const pattern = /^([A-Z][A-Z\-\.]+)\b(?:\s|:)(.*)/;
+      let currentSpeaker = null;
+      const dialogueDict = {};
+
+      for (let line of lines) {
+        const match = line.match(pattern);
+        if (match) {
+          currentSpeaker = match[1].trim();
+          const dialogue = match[2].trim();
+          if (!dialogueDict[currentSpeaker]) dialogueDict[currentSpeaker] = [];
+          if (dialogue) dialogueDict[currentSpeaker].push(dialogue);
+        } else if (currentSpeaker) {
+          dialogueDict[currentSpeaker].push(line.trim());
+        }
+      }
+      return dialogueDict;
+    }
+
+    function txtParseSingleTXTBlock(lines) {
+      const pattern = /^([A-Z][A-Z\s\-\.]+?)(?:[\.:])?$/;
+      let currentSpeaker = null;
+      const dialogueDict = {};
+
+      for (let line of lines) {
+        const match = line.match(pattern);
+        if (match) {
+          currentSpeaker = match[1].trim();
+          if (!dialogueDict[currentSpeaker]) dialogueDict[currentSpeaker] = [];
+        } else if (currentSpeaker) {
+          dialogueDict[currentSpeaker].push(line.trim());
+        }
+      }
+      return dialogueDict;
+    }
+
+    function cleanSpeakers(data) {
+      const elementsToDelete = ["ACT I", "Act I", "Act V", "Scene"];
+      const keysToDelete = Object.keys(data).filter(speaker =>
+        elementsToDelete.some(el =>
+          speaker.toLowerCase().startsWith(el.toLowerCase())
+        )
+      );
+      for (const key of keysToDelete) delete data[key];
+      return data;
     }
   </script>
 </body>
