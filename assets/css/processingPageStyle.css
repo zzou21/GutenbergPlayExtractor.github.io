@@ -1,0 +1,22 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 2em;
+  }
+  label, textarea, input, button {
+    display: block;
+    margin-top: 1em;
+    width: 100%;
+    max-width: 600px;
+  }
+  .flex-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  #lineNumbers {
+    text-align: right;
+    user-select: none;
+    color: gray;
+    padding-right: 10px;
+  }
+  

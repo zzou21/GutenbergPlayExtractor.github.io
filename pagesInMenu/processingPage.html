@@ -8,10 +8,7 @@ permalink: /processing-tool
 <head>
   <meta charset="UTF-8">
   <title>Project Gutenberg Dialogue Extractor</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 2em; }
-    label, textarea, input, button { display: block; margin-top: 1em; width: 100%; max-width: 600px; }
-  </style>
+  <link rel="stylesheet" href="{{ '/assets/css/processing-tool.css' | relative_url }}">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 </head>
@@ -91,15 +88,17 @@ permalink: /processing-tool
       }
 
       status.textContent += "\nAll done.";
+
+      zip.file(`${playName}_dialogue.json`, jsonStr);
+      status.textContent += "\nZipping files...";
+      const content = await zip.generateAsync({ type: "blob" });
+      const zipLink = document.createElement("a");
+      zipLink.href = URL.createObjectURL(content);
+      zipLink.download = "gutenberg_dialogues.zip";
+      zipLink.click();
+      status.textContent += "\nDownloaded ZIP file.";
+
     }
-    zip.file(`${playName}_dialogue.json`, jsonStr);
-    status.textContent += "\nZipping files...";
-    const content = await zip.generateAsync({ type: "blob" });
-    const zipLink = document.createElement("a");
-    zipLink.href = URL.createObjectURL(content);
-    zipLink.download = "gutenberg_dialogues.zip";
-    zipLink.click();
-    status.textContent += "\nDownloaded ZIP file.";
 
 
     function cleanExtractedPlainText(lines) {
