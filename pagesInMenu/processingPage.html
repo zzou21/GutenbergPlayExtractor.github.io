@@ -27,7 +27,6 @@ permalink: /processing-tool
     </div>
     
     <button onclick="extractAndDownload()">Generate JSON</button>
-
     <pre id="status"></pre>
 
     <script>
@@ -42,10 +41,8 @@ permalink: /processing-tool
 
       textarea.addEventListener("input", () => {
         updateLineNumbers();
-
         const lineCount = textarea.value.split("\n").length;
         const minRows = 5;
-
         textarea.rows = Math.max(minRows, lineCount);
       });
       updateLineNumbers();
@@ -71,7 +68,7 @@ permalink: /processing-tool
 
         for (const url of urlList) {
           try {
-            status.textContent += `Fetching: ${url}\n`;
+            status.textContent += "Fetching: ${url}\n";
             const response = await fetch(`${apiRelayURL}?url=${encodeURIComponent(url)}`);
             if (!response.ok) throw new Error("Failed to fetch text via relay");
 
@@ -94,9 +91,9 @@ permalink: /processing-tool
 
             zip.file(`${playName}_dialogue.json`, jsonStr);
 
-            status.textContent += `Processed: ${playName}_dialogue.json\n`;
+            status.textContent += "Processed: ${playName}_dialogue.json\n";
           } catch (err) {
-            status.textContent += `Error with ${url}: ${err.message}\n`;
+            status.textContent += "Error with ${url}: ${err.message}\n";
           }
         }
         status.textContent += "\nZipping files...\n";
