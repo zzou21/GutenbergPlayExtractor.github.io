@@ -1,6 +1,6 @@
 import requests, re, json, os
 from collections import defaultdict
-
+# Does not clean out stage directions.
 class GutenbergTXTPlayExtractor:
     def __init__(self, htmlURLList, jsonStorageOutputFolderPath):
         self.htmlURLList = htmlURLList

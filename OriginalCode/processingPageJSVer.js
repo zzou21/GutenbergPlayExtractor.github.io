@@ -123,6 +123,25 @@ class GutenbergTXTPlayExtractor {
     console.log(`Saved to: ${outputPath}`);
   }
 
+  removeStageDirectionsFromDialogues(dialogueDict) {
+    const cleanedDict = {};
+  
+    for (const speaker in dialogueDict) {
+      const cleanedLines = dialogueDict[speaker].map(line => 
+        line.replace(/\([^\)]*\)/g, '') 
+            .replace(/\[[^\]]*\]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+      ).filter(line => line);
+  
+      if (cleanedLines.length > 0) {
+        cleanedDict[speaker] = cleanedLines;
+      }
+    }
+    return cleanedDict;
+  }
+  
+
   async run() {
     for (let url of this.htmlURLList) {
       const content = await this.webFetchUsingSingleURL(url);
@@ -137,7 +156,9 @@ class GutenbergTXTPlayExtractor {
       }
 
       const cleanedLines = this.cleanExtractedPlainText(lines);
-      const processedPlay = this.determineFormatOfExtraction(cleanedLines);
+      let processedPlay = this.determineFormatOfExtraction(cleanedLines);
+      processedPlay = this.removeStageDirectionsFromDialogues(processedPlay)
+
       this.saveToJson(processedPlay, `${playName}.json`);
     }
   }

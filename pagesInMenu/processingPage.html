@@ -19,9 +19,13 @@ permalink: /processing-tool
     <label for="urlInput">Paste one or more Project Gutenberg .txt links (one per line):</label>
     <div class="flex-container">
       <pre id="lineNumbers">1</pre>
-      <textarea id="urlInput" rows="6" placeholder="https://www.gutenberg.org/cache/epub/1523/pg1523.txt&#10;https://www.gutenberg.org/cache/epub/75666/pg75666.txt"></textarea>
+      <textarea
+        id="urlInput"
+        rows="6"
+        placeholder="https://www.gutenberg.org/cache/epub/1523/pg1523.txt&#10;https://www.gutenberg.org/cache/epub/75666/pg75666.txt"
+      ></textarea>
     </div>
-
+    
     <button onclick="extractAndDownload()">Generate JSON</button>
 
     <pre id="status"></pre>
@@ -36,9 +40,13 @@ permalink: /processing-tool
         lineNumbers.textContent = Array.from({ length: lines }, (_, i) => i + 1).join("\n");
       }
 
-      textarea.addEventListener("input", updateLineNumbers);
-      textarea.addEventListener("scroll", () => {
-        lineNumbers.scrollTop = textarea.scrollTop;
+      textarea.addEventListener("input", () => {
+        updateLineNumbers();
+
+        const lineCount = textarea.value.split("\n").length;
+        const minRows = 5;
+
+        textarea.rows = Math.max(minRows, lineCount);
       });
       updateLineNumbers();
 
@@ -89,8 +97,6 @@ permalink: /processing-tool
         zipLink.click();
         status.textContent += "\nDownloaded ZIP file.\n";
       }
-
-
 
       function cleanExtractedPlainText(lines) {
         const startMarkersPrimary = ["DRAMATIS PERSONAE", "DRAMATIS PERSONÆ", "Dramatis Personæ", "Dramatis Personae", "*** START OF THE PROJECT GUTENBERG"];
@@ -172,6 +178,23 @@ permalink: /processing-tool
         );
         for (const key of keysToDelete) delete data[key];
         return data;
+      }
+
+      function removeStageDirectionsFromDialogues(dialogueDictionary){
+        const cleanedDict = {};
+        for (const speaker in dialogueDictionary) {
+          const cleanedLines = dialogueDictionary[speaker].map(line =>
+            line.replace(/\([^\)]*\)/g, '') 
+            .replace(/\[[^\]]*\]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+          ).filter(line => line);
+
+          if (cleanedLines.length > 0){
+            cleanedDict[speaker] = cleanedLines;
+          }
+        }
+        return cleanedDict;
       }
     </script>
   </main>

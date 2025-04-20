@@ -28,12 +28,17 @@ body {
   
 
   textarea {
-    width: 100%;
-    max-width: 800px;
+    background: repeating-linear-gradient(
+      to bottom,
+      white,
+      white 1.6em,
+      #eee 1.6em,
+      #eee 1.7em
+    );
+    line-height: 1.7em;
     font-family: monospace;
-    white-space: pre;
-    line-height: 1.6em;
-    padding-left: 0.5em;
+    resize: vertical;
+    overflow-y: auto;
   }
   
   button {
