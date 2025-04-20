@@ -56,14 +56,22 @@ permalink: /processing-tool
           return;
         }
 
-        const checkForAllValidURLs = urlText.split(/\r?\n/).map(url => url.trim()).filter(boolean);
+        const checkForAllValidURLs = urlText.split(/\r?\n/).map(url => url.trim()).filter(Boolean);
 
         const gutenbergURLPrefix = "https://www.gutenberg.org/";
         // add a function that checks for whether all urls begin with this prefix
+        function isValidURL(url) {
+          try {
+            new URL(url);
+            return true;
+          } catch (_) {
+            return false;
+          }
+        }
 
-        const invalidURLList = checkForAllValidURLs.filter(url => ! isValidURL(url))
+        const invalidURLList = checkForAllValidURLs.filter(url => ! isValidURL(url));
         if (invalidURLList.length > 0){
-          status.textContent += "Input contains invalid URL(s): \n${invalidURLList.join('\n')}";
+          status.textContent += `Input contains invalid URL(s): \n${invalidURLList.join('\n')}`;
           return;
         }
         status.textContent += "Finished checking valid url";
@@ -75,7 +83,7 @@ permalink: /processing-tool
 
         for (const url of urlList) {
           try {
-            status.textContent += "Fetching: ${url}\n";
+            status.textContent += `Fetching: ${url}\n`;
             const response = await fetch(`${apiRelayURL}?url=${encodeURIComponent(url)}`);
             if (!response.ok) throw new Error("Failed to fetch text via relay");
 
