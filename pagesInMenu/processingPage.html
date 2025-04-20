@@ -54,7 +54,17 @@ permalink: /processing-tool
         const urlText = textarea.value.trim();
         const status = document.getElementById("status");
         status.textContent = "Fetching text...\n";
+        if (urlText.length === 0){
+          status.textContent += "Empty URL. Please ensure you have inputted at least one URL";
+          return;
+        }
 
+        const checkForAllValidURLs = urlText.split(/\r?\n/).map(url => url.trim()).filter(boolean)
+        const invalidURLList = checkForAllValidURLs.filter(url => ! isValidURL(url))
+        if (invalidURLList.length > 0){
+          status.textContent += "Input contains invalid URL(s): \n${invalidURLList.join('\n')}";
+          return;
+        }
         const urlList = urlText.split(/\r?\n/).map(url => url.trim()).filter(Boolean);
         const apiRelayURL = "https://8phd78erkg.execute-api.us-east-2.amazonaws.com/default/corsRelayFetcherGutenberg";
         const zip = new JSZip();
