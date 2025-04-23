@@ -94,7 +94,7 @@ class GutenbergTXTPlayExtractor:
         with open(outputPath, "w", encoding="utf-8") as jsonStorageSingleFile:
             json.dump(dialogueDictionary, jsonStorageSingleFile, indent=4, ensure_ascii=False)
 
-    def run(self):
+    def run(self):  
         for url in self.htmlURLList:
             webFetchContent = self.webFetchUsingSingleURL(url)
             if not webFetchContent: continue
