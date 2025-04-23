@@ -26,7 +26,7 @@ permalink: /processing-tool
       ></textarea>
     </div>
     
-    <button onclick="extractAndDownload()">Generate JSON</button>
+    <button id="generateJsonButton" onclick="extractAndDownload()">Generate JSON</button>
     <pre id="status"></pre>
 
     <script>
@@ -118,6 +118,17 @@ permalink: /processing-tool
         zipLink.download = "gutenberg_dialogues.zip";
         zipLink.click();
         status.textContent += "\nDownloaded ZIP file.\n";
+
+        const buttonText = document.getElementById("generateJsonButton");
+        buttonText.textContent = "Successfully generated JSON";
+        buttonText.style.backgroundColor = "#4CAF50";
+        buttonText.style.color = "white";
+
+        setTimeout(() => {
+          buttonText.textContent = "Generate JSON";
+          button.style.backgroundColor = "#e0e0e0";
+          button.style.color = "black";
+        }, 5000);
       }
 
       function cleanExtractedPlainText(lines) {
