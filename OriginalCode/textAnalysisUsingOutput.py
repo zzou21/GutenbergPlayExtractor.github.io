@@ -38,16 +38,20 @@ def usingProcessedJson(input):
         for entity in analysisPerPerson.ents:
             label = entity.label_
             text = entity.text
-            if label not in entityDictionary[name]:
-                entityDictionary[name][label] = [text]
-            else:
-                entityDictionary[name][label].append(text)
+            if label in ["PERSON", "ORG", "GPE", "LOC", "PRODUCT"]:
+                if label not in entityDictionary[name]:
+                    entityDictionary[name][label] = [text]
+                else:
+                    entityDictionary[name][label].append(text)
 
     return entityDictionary
-
 
 if __name__ == "__main__":
     unprocessedTXTFile = "/Users/Jerry/Desktop/GutenbergPlayExtractor.github.io/OriginalCode/practiceTXT/pg1523.txt"
     processedJsonFile = "/Users/Jerry/Desktop/GutenbergPlayExtractor.github.io/OriginalCode/jsonStorage/AsYouLikeIt.json"
-    print(usingUnprocessedTXT(unprocessedTXTFile))
-    print(usingProcessedJson(processedJsonFile))
+    # TXTOutputDict = usingUnprocessedTXT(unprocessedTXTFile)
+    # for entity, content in TXTOutputDict.items():
+    #     print(entity, ": ", content, "\n")
+    jsonOutputDict = usingProcessedJson(processedJsonFile)
+    for name, entityDict in jsonOutputDict.items():
+        print(name, ": ", entityDict, "\n")
