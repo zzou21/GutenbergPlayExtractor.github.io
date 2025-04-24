@@ -39,6 +39,9 @@ body {
     font-family: monospace;
     resize: vertical;
     overflow-y: auto;
+    overflow-x: auto;
+    white-space: pre;
+    word-wrap: normal;
   }
   
   button {
@@ -49,6 +52,6 @@ body {
     cursor: pointer;
     background-color: #e0e0e0;
     color: black;
-    
+
   }
   
